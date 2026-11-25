@@ -1,0 +1,22 @@
+/* Additions to the prototype's style.css, which is kept unchanged. */
+.bubble{white-space:pre-wrap}
+.bubble.mine{background:#dfe8cf}
+.bubble.pending{opacity:.65}
+.messages.scroll{max-height:55vh;overflow-y:auto;padding-right:4px}
+.notice{background:#f7edd8;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.5}
+.notice p{margin:0 0 6px;color:#5a4c2c}
+.notice p:last-child{margin:0}
+.error{color:#9b2f1e}
+.google{width:100%;background:#fff;color:#263d30}
+.narrow .actions{margin-top:14px}
+.card h3,.box h3{overflow-wrap:anywhere}
+button:disabled{opacity:.55;cursor:not-allowed}
+.loading{color:#59665a;padding:60px 0}
+.stack-top{margin-top:25px}
+.flag{background:#f6ddd5;border-radius:10px;padding:10px 14px;color:#7c2a1a}
+/* Community groups are links here; same look as the chip buttons. */
+.chips .chip{background:#f6f7ed;color:#42543e;border-color:#c9d1bf;padding:9px 14px}
+.chips .chip.active{background:#34573e;color:white}
+/* Dashboard: two independent columns, so a tall chat does not stretch its neighbours. */
+.columns{margin-top:20px;align-items:start}
+.columns>*{min-width:0}
