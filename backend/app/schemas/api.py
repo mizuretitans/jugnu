@@ -194,6 +194,30 @@ class HelperOut(Out):
     messages: list[ChatMessageOut]
 
 
+class CareerPathOut(Out):
+    id: str
+    title: str
+    category: str
+    streams: list[str]
+    route: str
+    overview: str
+
+
+class CareerHistoryMessage(In):
+    role: Literal["user", "assistant"]
+    content: ChatText
+
+
+class CareerExplorerIn(In):
+    career_id: Annotated[str, Field(min_length=1, max_length=64, pattern=r"^[a-z0-9_]+$")]
+    history: list[CareerHistoryMessage] = Field(default_factory=list, max_length=12)
+    text: ChatText
+
+
+class CareerExplorerOut(Out):
+    reply: str
+
+
 # ------------------------------------------------------------------ dashboard
 class RoadmapStep(Out):
     title: str

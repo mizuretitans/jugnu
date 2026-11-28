@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { NotFound } from './components/Page';
 import { AuthCallback } from './pages/AuthCallback';
 import { Book } from './pages/Book';
+import { CareerExplorer } from './pages/CareerExplorer';
 import { Community } from './pages/Community';
 import { ConversationPage } from './pages/Conversation';
 import { DashboardPage } from './pages/Dashboard';
@@ -23,6 +24,7 @@ export function App() {
         <Route path="mentors/:id" element={<MentorProfile />} />
         <Route path="mentors/:id/book" element={<RequireAuth role="student"><Book /></RequireAuth>} />
         <Route path="guide" element={<RequireAuth role="student"><Guide /></RequireAuth>} />
+        <Route path="careers" element={<RequireAuth role="student"><CareerExplorer /></RequireAuth>} />
         <Route path="login" element={<Login />} />
         <Route path="auth/callback" element={<AuthCallback />} />
         <Route path="welcome" element={<Welcome />} />
