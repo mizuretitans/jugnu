@@ -105,6 +105,23 @@ export interface Booking {
 
 export interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
+export interface CareerPath {
+  id: string;
+  title: string;
+  category: string;
+  streams: string[];
+  route: string;
+  overview: string;
+}
+
+export interface CareerExplorerInput {
+  career_id: string;
+  history: ChatMessage[];
+  text: string;
+}
+
+export interface CareerExplorerReply { reply: string }
+
 export interface Intake {
   status: 'not_started' | 'in_progress' | 'confirming' | 'ready_to_route' | 'completed';
   busy: boolean;

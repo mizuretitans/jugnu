@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { del, get, patch, post } from './client';
 import type {
   Booking, Config, Conversation, Dashboard, Intake, Mentor, MentorshipRequest, Message,
-  NewBooking, OwnMentor, Post, StudentBrief, Turn, ChatMessage,
+  NewBooking, OwnMentor, Post, StudentBrief, Turn, ChatMessage, CareerPath,
+  CareerExplorerInput, CareerExplorerReply,
 } from './types';
 
 const CHAT_POLL_MS = 3_000;
@@ -17,6 +18,13 @@ export const useMentors = () =>
 
 export const useMentor = (id: string) =>
   useQuery({ queryKey: ['mentors', id], queryFn: () => get<Mentor>(`/mentors/${id}`) });
+
+export const useCareerPaths = () =>
+  useQuery({
+    queryKey: ['career-paths'],
+    queryFn: () => get<CareerPath[]>('/career-explorer/paths'),
+    staleTime: Infinity,
+  });
 
 export const useDashboard = (enabled = true) =>
   useQuery({
@@ -112,3 +120,9 @@ export const useAskHelper = () =>
     (text: string) => post<{ messages: ChatMessage[] }>('/helper/messages', { text }),
     ['helper'],
   );
+
+export const useAskCareerExplorer = () =>
+  useMutation({
+    mutationFn: (input: CareerExplorerInput) =>
+      post<CareerExplorerReply>('/career-explorer/messages', input),
+  });
