@@ -6,6 +6,7 @@ Supabase Auth. Two chatbots: intake (career guide) and helper (dashboard).
 - Design, schema, API map, decisions: [architecture.md](architecture.md)
 - Study guide and lessons log: [learning.md](learning.md)
 - Setup for people: [README.md](README.md)
+- Deploying: [DEPLOY-VERCEL.txt](DEPLOY-VERCEL.txt)
 
 ## Keep the docs true
 
@@ -13,6 +14,7 @@ With every relevant change, in the same piece of work:
 - `architecture.md`: schema, endpoints, login, chatbot flow, configuration or a design decision changed
 - `learning.md`: add a dated entry to the lessons log for a bug, surprise or decision worth remembering
 - this file: commands, folders, conventions or rules changed
+- `DEPLOY-VERCEL.txt`: hosting, settings or the deploy steps changed
 
 No secrets or personal details in any of them.
 
@@ -32,6 +34,7 @@ No secrets or personal details in any of them.
 | `frontend/src/auth/` | Supabase client, login state, route guard |
 | `frontend/src/pages/`, `components/` | Screens and shared parts |
 | `resources/` | Prototypes. Read only: never edit |
+| `vercel.json`, `.vercelignore` | Hosting: `/api/*` goes to `backend/`, the rest to the `frontend/` build. Keep every endpoint under `/api` |
 
 ## Commands
 
@@ -53,7 +56,7 @@ whose name does not end in `_test`.
 
 ## Environment variables (`backend/.env`, template in `.env.example`)
 
-`DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` · `SUPABASE_URL` `SUPABASE_PUBLISHABLE_KEY` ·
+`DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` `DB_SSLMODE` (`require` for hosted databases) · `SUPABASE_URL` `SUPABASE_PUBLISHABLE_KEY` ·
 `DEMO_LOGIN` `DEMO_JWT_SECRET` · `AI_MODE` (`openrouter` or `demo`) `OPENROUTER_API_KEY`
 `INTAKE_CHAT_MODEL` `INTAKE_EXTRACT_MODEL`
 

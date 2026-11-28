@@ -1,0 +1,286 @@
+JUGNU: DEPLOYING ON VERCEL
+Step-by-step guide
+
+What you end up with
+--------------------
+One web address, https://<project>.vercel.app, that serves both parts of Jugnu:
+  - the React site (from frontend/)
+  - the FastAPI backend at /api/... (from backend/)
+The database runs on Neon, a free hosted PostgreSQL. vercel.json in the repository already connects the
+pieces; you only create the accounts and fill in settings.
+
+Time needed: about 45 minutes the first time.
+
+Placeholders in this guide:
+  <project>     your Vercel project name, as in https://<project>.vercel.app
+  <...>         a value you copy from a website. Never paste real passwords or keys into this file,
+                a chat, or a commit.
+
+
+=====================================================================================================
+BEFORE YOU START
+=====================================================================================================
+
+You need:
+  [ ] The app running on your own computer (see README.md, "Run it"). This proves the code works
+      before you add the internet to the problem.
+  [ ] The code on GitHub, including vercel.json, .vercelignore and backend/.python-version.
+  [ ] A GitHub account (you will use it to sign in to Vercel).
+  [ ] For Google login: the Supabase project from README.md, "Set up Google login".
+      Without it, only demo login works.
+  [ ] For real AI replies: an OpenRouter API key. Without it, use AI_MODE=demo.
+
+Push the code if you have not:
+    git add vercel.json .vercelignore backend/.python-version <other changed files>
+    git commit -m "Prepare for Vercel"
+    git push
+Do not use "git add ." : resources/ contains a zip with a saved student chat.
+
+
+=====================================================================================================
+PART 1: CREATE THE DATABASE (NEON)
+=====================================================================================================
+
+1. Go to https://neon.com and sign up (signing in with GitHub is fine).
+
+2. Create a project.
+     - Name: jugnu
+     - PostgreSQL version: 16 (the version used for development and tests)
+     - Region: the one closest to your users. For India, choose an Asia Pacific region such as
+       Singapore if it is offered. Remember which one you picked; you need it in Part 3, step 6.
+
+3. Open the project and click "Connect" (or "Connection details"). You will see a connection string
+   like this:
+
+       postgresql://<user>:<password>@<host>/<database>?sslmode=require
+
+   Neon offers it in two forms. Note down BOTH hosts:
+     - POOLED host: has "-pooler" in its name. The deployed app uses this one.
+     - DIRECT host: the same name without "-pooler". Use it for creating tables (Part 2).
+   Usually a "Connection pooling" switch on that screen changes between the two.
+
+4. Split the connection string into the settings Jugnu uses:
+
+       postgresql://  neondb_owner : AbC123xyz @ ep-cool-name-123456-pooler.aws.region.neon.tech / neondb
+                      ^^^^^^^^^^^^   ^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ^^^^^^
+                      DB_USER        DB_PASSWORD DB_HOST                                             DB_NAME
+
+   (Made-up values. Yours will differ.)
+     DB_PORT    = 5432 (unless the string shows another number after the host, like :5433)
+     DB_SSLMODE = require
+
+
+=====================================================================================================
+PART 2: CREATE THE TABLES AND SAMPLE PEOPLE
+=====================================================================================================
+
+You do this once from your own computer. Deploys never change the database by themselves.
+
+1. Open PowerShell in the backend folder:
+       cd "<path to Jugnu>\backend"
+
+2. Point THIS terminal window at Neon. These values override backend/.env only in this window,
+   so your local setup stays untouched. Use the DIRECT host here:
+
+       $env:DB_HOST = "<direct host, without -pooler>"
+       $env:DB_PORT = "5432"
+       $env:DB_USER = "<user>"
+       $env:DB_PASSWORD = "<password>"
+       $env:DB_NAME = "<database>"
+       $env:DB_SSLMODE = "require"
+
+3. Create the tables:
+       .venv\Scripts\alembic upgrade head
+   The last lines should mention "0001". An error about passwords or hosts means a value in step 2 is
+   wrong.
+
+4. Add the sample mentors (and the demo students):
+       .venv\Scripts\python -m scripts.seed
+
+5. Skip scripts.create_db. Neon has already created the database.
+
+6. Close this PowerShell window. That forgets the Neon settings, so you do not later run local
+   commands against the online database by accident.
+
+
+=====================================================================================================
+PART 3: CREATE THE VERCEL PROJECT
+=====================================================================================================
+
+1. Go to https://vercel.com and sign up with GitHub. The free Hobby plan is enough (it is for
+   non-commercial use, which covers a hackathon).
+
+2. Click "Add New" > "Project" and import the Jugnu repository. If it is not listed, give Vercel
+   access to it in the GitHub permissions screen that Vercel links to.
+
+3. Root directory: leave it as the repository root. Do NOT pick frontend/ or backend/. Vercel reads
+   vercel.json there and builds both parts.
+   Framework preset: leave whatever Vercel shows; vercel.json decides.
+
+4. Open "Environment Variables" before clicking Deploy, and add:
+
+   Database (use the POOLED host here):
+       DB_HOST            <pooled host, with -pooler>
+       DB_PORT            5432
+       DB_USER            <user>
+       DB_PASSWORD        <password>
+       DB_NAME            <database>
+       DB_SSLMODE         require
+
+   Google login (from Supabase, Project Settings > API keys and Data API / project URL):
+       SUPABASE_URL                https://<your-supabase-project>.supabase.co
+       SUPABASE_PUBLISHABLE_KEY    sb_publishable_...
+     Never use a key that starts with sb_secret_. The publishable key is sent to every browser.
+
+   AI, choose one:
+       AI_MODE            openrouter
+       OPENROUTER_API_KEY <your key>
+     or
+       AI_MODE            demo          (scripted replies, labelled "Demo guide", no key needed)
+
+   Demo login, choose one:
+       DEMO_LOGIN         false         (recommended once real students use the site)
+     or, only for a judged demo with sample data:
+       DEMO_LOGIN         true
+       DEMO_JWT_SECRET    <random text, at least 32 characters>
+     Make the secret on your computer with:
+       python -c "import secrets; print(secrets.token_urlsafe(48))"
+     With DEMO_LOGIN=true ANYONE with the link can log in as the sample student or mentor.
+     Turn it off again after judging.
+
+   Make sure each variable applies to "Production" (and "Preview" if you want preview deploys to work).
+
+5. Click "Deploy" and wait for the build. Note your address: https://<project>.vercel.app
+
+6. Put the backend near the database. Every page makes several database queries, so a backend in the
+   USA talking to a database in Asia is slow. In the project's Settings, find the Functions region
+   setting and choose the region nearest to the Neon region from Part 1 (for Singapore that is
+   "sin1"). Redeploy afterwards (Deployments > the latest one > "..." > Redeploy).
+
+
+=====================================================================================================
+PART 4: ALLOW LOGIN ON THE NEW ADDRESS
+=====================================================================================================
+
+Skip this part if you only use demo login.
+
+In Supabase (your project > Authentication > URL Configuration):
+  1. Site URL:           https://<project>.vercel.app
+  2. Redirect URLs, add: https://<project>.vercel.app/auth/callback
+     Keep http://localhost:5173/auth/callback too if you still develop locally.
+
+In Google Cloud Console (APIs & Services > Credentials > your OAuth client):
+  3. Authorized JavaScript origins, add: https://<project>.vercel.app
+  4. Authorized redirect URIs: leave them alone. The only one needed is Supabase's callback URL
+     (https://<your-supabase-project>.supabase.co/auth/v1/callback), which you added during setup.
+     Do NOT add the Vercel address there.
+
+Google can take a few minutes to apply changes.
+
+
+=====================================================================================================
+PART 5: CHECK THAT IT WORKS
+=====================================================================================================
+
+Work through these in order. Each one tests one piece.
+
+  [ ] https://<project>.vercel.app/api/health  shows  {"status":"ok"}
+        -> the backend runs and the /api routing works
+  [ ] https://<project>.vercel.app/mentors  lists the four sample mentors
+        -> the backend reaches the database
+  [ ] Reload the browser on /mentors. The page appears again, not a 404 error.
+        -> deep links work
+  [ ] Log in with Google. You come back to the Vercel address (not localhost) and see the
+      "Welcome" page to pick Student or Mentor.
+        -> Supabase and Google settings are right
+  [ ] As a student, send one message in the guide.
+        -> the AI settings are right
+  [ ] Open a second browser (or a private window), log in as another person and check that you
+      cannot open the first person's messages page.
+
+If one fails, see TROUBLESHOOTING below.
+
+
+=====================================================================================================
+PART 6: BEFORE A PRESENTATION
+=====================================================================================================
+
+  1. Reset the sample people, from backend/ in a NEW PowerShell window with the Neon settings from
+     Part 2 step 2 (direct host):
+         .venv\Scripts\python -m scripts.seed --reset-demo
+  2. Open https://<project>.vercel.app/api/health a minute before you start. The first request after
+     a quiet period takes a few extra seconds.
+  3. Free AI models have daily limits. Rehearse with AI_MODE=demo, switch to openrouter for the real
+     thing (change the variable, then Redeploy).
+
+
+=====================================================================================================
+PART 7: UPDATING THE SITE LATER
+=====================================================================================================
+
+  Code change:      push to GitHub. Vercel deploys main automatically. Other branches get a preview
+                    address.
+  Setting change:   edit it in Vercel > Settings > Environment Variables, then Redeploy. Running
+                    deployments do not see changed variables.
+  Database change:  new Alembic migration. Run "alembic upgrade head" against Neon (Part 2, steps 1-3)
+                    BEFORE pushing code that needs the new tables or columns.
+  New endpoint:     keep it under /api. Anything else goes to the React site, not to FastAPI.
+
+
+=====================================================================================================
+TROUBLESHOOTING
+=====================================================================================================
+
+Build fails, or Vercel treats the frontend as a Python project
+    There is an empty frontend/requirements.txt in the repository. Delete it, commit, push.
+
+/api/health shows the React "not found" page or a Vercel 404
+    The /api routing did not apply. Check that the project's root directory is the repository root
+    and that vercel.json is on the branch you deployed. Look at the build log for messages about
+    "services". Vercel Services is in beta. The fallback is two separate Vercel projects (see
+    architecture.md, "Hosting on Vercel").
+
+/api/health works, but /mentors shows "Something went wrong"
+    The database settings are wrong. Open Vercel > the deployment > Logs (or Runtime Logs) and look
+    for the error:
+      "password authentication failed"   DB_USER or DB_PASSWORD is wrong
+      "could not translate host name"    DB_HOST has a typo
+      "SSL" / "encryption required"      DB_SSLMODE is missing; set it to require
+      "relation ... does not exist"      the tables were never created: do Part 2
+
+Reloading a page such as /dashboard gives a 404
+    The frontend's fallback to index.html did not apply. Report the exact URL and what the page
+    shows; the rewrite in vercel.json needs adjusting.
+
+After Google login you land on http://localhost:5173
+    Supabase's Site URL still points to localhost, or the Vercel callback is missing from the
+    Redirect URLs (Part 4, steps 1-2).
+
+Google shows "redirect_uri_mismatch"
+    The Google client's redirect URI must be Supabase's callback (Part 4, step 4), not Vercel's.
+
+Every page after login says you are logged out, or the API returns 401
+    SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY is missing or belongs to another project. Supabase must
+    use asymmetric JWT signing keys (README.md, Google login step 1).
+
+The guide says "The AI guide is not set up on this server yet"
+    AI_MODE is openrouter but OPENROUTER_API_KEY is missing. Add it and Redeploy.
+
+The guide says the AI provider is out of requests
+    The free model's daily limit is used up. Wait, use another key, or switch to AI_MODE=demo.
+
+The site is slow on every page
+    The backend region is far from the database (Part 3, step 6).
+
+
+=====================================================================================================
+SAFETY CHECKLIST
+=====================================================================================================
+
+  [ ] backend/.env is not in GitHub (it is in .gitignore) and not uploaded (.vercelignore).
+  [ ] Only the sb_publishable_ Supabase key is used. No sb_secret_ key anywhere.
+  [ ] DEMO_LOGIN is false whenever real students can use the site.
+  [ ] New mentors stay hidden until approved: run scripts.approve_mentor against Neon (with the
+      Part 2 settings) after checking who they are. Students may be minors.
+  [ ] There is no rate limiting. Anyone who logs in uses your OpenRouter allowance.
+  [ ] If the GitHub repository is public, remember the zip in resources/ contains a saved chat.

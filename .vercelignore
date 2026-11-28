@@ -1,0 +1,12 @@
+# `vercel deploy` uploads the local folder, not git. Keep secrets and local files out.
+.env
+**/.env
+**/.env.local
+**/.venv
+**/venv
+**/node_modules
+**/__pycache__
+frontend/dist
+backend/.pytest_cache
+backend/tests
+resources

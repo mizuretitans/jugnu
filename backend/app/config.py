@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     db_user: str = "postgres"
     db_password: SecretStr = SecretStr("")
     db_name: str = "jugnu"
+    # Empty locally. "require" for Neon and most hosted PostgreSQL.
+    db_sslmode: Literal["", "disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = ""
 
     supabase_url: str = ""
     supabase_publishable_key: str = ""
@@ -63,6 +65,7 @@ class Settings(BaseSettings):
             host=self.db_host,
             port=self.db_port,
             database=database or self.db_name,
+            query={"sslmode": self.db_sslmode} if self.db_sslmode else {},
         )
 
 

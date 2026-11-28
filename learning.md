@@ -91,3 +91,15 @@ Newest first. Add: what happened, why, what we did.
 - **Supabase keys changed.** Use `sb_publishable_` keys and asymmetric signing keys; the older `anon` key is being
   retired at the end of 2026.
 - **A bug in the prototype's login we did not copy.** Anyone could sign up as an existing mentor and read their inbox.
+
+### 2026-11-28: getting ready for Vercel
+
+- **Check the host's time limits against your slowest request.** Netlify's proxy stops after 26 seconds. A guide
+  turn can take about 75 seconds, so it would have failed only on slow AI days, which is the worst kind of bug.
+  Vercel runs the backend itself and allows 300 seconds.
+- **Connection poolers and prepared statements.** psycopg switches a query to a server-side prepared statement
+  after five runs. Behind a pooler in transaction mode, the next request may land on a different database
+  connection that never saw it. `prepare_threshold=None` turns this off. We confirmed it: with the default the
+  database listed one prepared statement after ten runs, with the setting none.
+- **`vercel deploy` uploads your folder, not git.** `.gitignore` does not protect `backend/.env` there;
+  `.vercelignore` does.

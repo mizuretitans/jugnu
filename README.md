@@ -73,6 +73,43 @@ Supabase is used for login only. App data stays in your own PostgreSQL.
 Set `AI_MODE=openrouter` and `OPENROUTER_API_KEY` in `backend/.env`. One full intake is roughly 25 AI calls.
 Free models have daily limits, so rehearse in demo mode.
 
+## Deploy on Vercel
+
+One Vercel project serves both parts: `vercel.json` sends `/api/*` to FastAPI and everything else to the React
+build. The database lives on Neon (free PostgreSQL). Details: [architecture.md](architecture.md#hosting-on-vercel).
+Full walkthrough with checks and troubleshooting: [DEPLOY-VERCEL.txt](DEPLOY-VERCEL.txt).
+
+1. **Database.** Create a project at neon.com. From its connection details note the host, user, password and
+   database name. Neon shows two hosts: the **pooled** one (contains `-pooler`) is for the app, the direct one for
+   migrations.
+2. **Tables and sample people.** On your computer, temporarily point `backend/.env` at Neon (the direct host) with
+   `DB_SSLMODE=require`, then run from `backend/`:
+   ```powershell
+   .venv\Scripts\alembic upgrade head
+   .venv\Scripts\python -m scripts.seed
+   ```
+   Skip `scripts.create_db`; Neon already created the database. Point `.env` back at your local database after.
+3. **Vercel project.** At vercel.com, import the GitHub repository and keep the root directory as the repository
+   root (it reads `vercel.json`). Add these environment variables, then deploy:
+
+   | Variable | Value |
+   |---|---|
+   | `DB_HOST` | Neon's **pooled** host |
+   | `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME` | From Neon (port is usually 5432) |
+   | `DB_SSLMODE` | `require` |
+   | `SUPABASE_URL` `SUPABASE_PUBLISHABLE_KEY` | As for local Google login |
+   | `AI_MODE` | `openrouter` (with `OPENROUTER_API_KEY`) or `demo` |
+   | `DEMO_LOGIN` | `false`. Set `true` (with `DEMO_JWT_SECRET`) only for a judged demo with sample data: anyone with the link can then log in as the sample people |
+
+4. **Login addresses.** With your address `https://<project>.vercel.app`:
+   - Supabase, **URL Configuration**: set it as the Site URL and add `https://<project>.vercel.app/auth/callback`
+     to the redirect URLs.
+   - Google Cloud OAuth client: add it to the Authorized JavaScript origins.
+5. **Check it.** `https://<project>.vercel.app/api/health` shows `{"status":"ok"}`. Open the site, reload a page
+   such as `/mentors`, and log in with Google.
+
+There is no rate limiting: anyone who logs in uses your OpenRouter allowance.
+
 ## Useful commands (from `backend/`)
 
 | Task | Command |

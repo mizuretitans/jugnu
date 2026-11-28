@@ -119,6 +119,32 @@ next state, ask the AI for a reply, store it, release the lease.
 | New mentors hidden until approved | Students may be minors |
 | Fields without mentors are said openly | The prototype silently sent them to Civil Services |
 
+## Hosting on Vercel
+
+`vercel.json` makes one Vercel project with two services on one address:
+
+```mermaid
+flowchart LR
+  B[Browser] --> V[Vercel]
+  V -- "/api/*" --> F["backend/ (FastAPI function)"]
+  V -- "everything else" --> S["frontend/ (Vite build, unknown paths get index.html)"]
+  F --> N[(Neon PostgreSQL, pooled host)]
+```
+
+- The backend receives the full path (`/api/health`), so routes keep their `/api` prefix. Any new endpoint must stay
+  under `/api`, or the frontend service will answer it.
+- Same address for both, so no CORS and no API address setting; `/api/config` still provides the public settings.
+- Why not Netlify: its proxy stops after 26 seconds, and a guide turn can take about 75 seconds (three 25-second AI
+  calls). A Vercel Python function may run 300 seconds on the Hobby plan.
+- Each running copy of the function has its own small connection pool, so the app connects through Neon's pooler.
+  Poolers in transaction mode break psycopg's server-side prepared statements, so `db.py` sets
+  `prepare_threshold=None`. Hosted databases need TLS: `DB_SSLMODE=require`.
+- Migrations and seeding run from a developer machine against Neon, never during a deploy.
+- Every poll (3 s in a chat, 10 s on pages) is a function call and counts toward the plan's usage.
+- `.vercelignore` keeps `.env`, `.venv`, tests and `resources/` out of uploads made with the Vercel CLI.
+- Vercel Services is in Beta. If its routing changes, the fallback is two Vercel projects, with the frontend
+  forwarding `/api` to the backend project.
+
 ## Dockerizing later
 
 Already in place: all settings from environment variables, stateless API, logs to stdout, health endpoint, pinned
