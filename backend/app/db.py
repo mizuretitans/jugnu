@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
 
-engine = create_engine(get_settings().database_url(), pool_pre_ping=True)
+# prepare_threshold=None: psycopg otherwise switches to server-side prepared statements after five
+# runs of a query, which breaks behind transaction poolers such as Neon's pooled host.
+engine = create_engine(
+    get_settings().database_url(), pool_pre_ping=True, connect_args={"prepare_threshold": None}
+)
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
 

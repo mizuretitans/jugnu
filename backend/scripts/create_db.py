@@ -10,6 +10,7 @@ def main() -> None:
     with psycopg.connect(
         host=s.db_host, port=s.db_port, user=s.db_user,
         password=s.db_password.get_secret_value() or None, dbname="postgres", autocommit=True,
+        **({"sslmode": s.db_sslmode} if s.db_sslmode else {}),
     ) as conn:
         for name in (s.db_name, f"{s.db_name}_test"):
             if conn.execute("SELECT 1 FROM pg_database WHERE datname = %s", (name,)).fetchone():
